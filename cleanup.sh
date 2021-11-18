@@ -1,12 +1,13 @@
 #!/bin/bash
 set -eo pipefail
 STACK=aws-securityhub-findings-enrichment-stack
+PROFILE=$(cat profile.txt)
 if [[ $# -eq 1 ]] ; then
     STACK=$1
     echo "Deleting stack $STACK"
 fi
-FUNCTION=$(aws cloudformation describe-stack-resource --stack-name $STACK --logical-resource-id function --query 'StackResourceDetail.PhysicalResourceId' --output text)
-aws cloudformation delete-stack --stack-name $STACK
+FUNCTION=$(aws cloudformation describe-stack-resource --profile $PROFILE --stack-name $STACK --logical-resource-id function --query 'StackResourceDetail.PhysicalResourceId' --output text)
+aws cloudformation delete-stack --profile $PROFILE --stack-name $STACK
 echo "Deleted $STACK stack."
 
 if [ -f bucket-name.txt ]; then
@@ -17,7 +18,7 @@ if [ -f bucket-name.txt ]; then
         while true; do
             read -p "Delete deployment artifacts and bucket ($ARTIFACT_BUCKET)? (y/n)" response
             case $response in
-                [Yy]* ) aws s3 rb --force s3://$ARTIFACT_BUCKET; rm bucket-name.txt; break;;
+                [Yy]* ) aws s3 rb --profile $PROFILE --force s3://$ARTIFACT_BUCKET; rm bucket-name.txt; break;;
                 [Nn]* ) break;;
                 * ) echo "Response must start with y or n.";;
             esac
@@ -28,7 +29,7 @@ fi
 while true; do
     read -p "Delete function log group (/aws/lambda/$FUNCTION)? (y/n)" response
     case $response in
-        [Yy]* ) aws logs delete-log-group --log-group-name /aws/lambda/$FUNCTION; break;;
+        [Yy]* ) aws logs delete-log-group --profile $PROFILE --log-group-name /aws/lambda/$FUNCTION; break;;
         [Nn]* ) break;;
         * ) echo "Response must start with y or n.";;
     esac

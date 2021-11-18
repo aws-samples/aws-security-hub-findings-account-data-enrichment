@@ -30,10 +30,15 @@ Download or clone this repository.
     $ git clone git@github.com:aws-samples/aws-security-hub-findings-account-data-enrichment.git
     $ cd aws-security-hub-findings-account-data-enrichment
 
+> Note: for all the AWS CLI commands used below, `us-east-1` is used as the default region.
+
 To create a new bucket for deployment artifacts, run `create-bucket.sh`.
 
     $ ./create-bucket.sh
     make_bucket: lambda-artifacts-a5e491dbb5b22e0d
+
+Update the AWS CLI profile to be used in the `profile.txt` file.
+    Note: even for `default` profile  ,Create a file with text `default` in the `profile.txt` file
 
 ### Deploy
 * Deploy the `management-account-contact-readonly-role-template.yml` in the Org. Manamagement account and copy the Role ARN from the CloudFormation Stack output section
