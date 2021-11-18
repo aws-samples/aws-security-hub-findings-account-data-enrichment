@@ -1,0 +1,106 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: SAM Template for security-hub-findings-enrichment
+
+Parameters:
+  ManagementAccount:
+    Type: String
+    AllowedPattern: ^\d{12}
+    Description: Management AWS Account ID for the AWS Organizations
+    Default: '123456789012'
+  
+  OrgManagementAccountContactRole:
+    Type: String
+    AllowedPattern: arn:(aws[a-zA-Z-]*)?:iam::\d{12}:role/?[a-zA-Z_0-9+=,.@\-_/]+
+    Description: Role ARN in the management account to access the Alternate contact details
+    Default: arn:aws:iam::123456789012:role/account-contact-readonly
+
+Resources:
+  SHEnrichmentFunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+        Version: "2012-10-17"
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+
+  SHFindingsEnrichmentPermissionPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action: 
+              - organizations:DescribeAccount
+              - organizations:ListTagsForResource
+              - organizations:DescribeOrganizationalUnit
+              - organizations:ListParents
+            Resource:
+              - Fn::Join:
+                    - ""
+                    - - "arn:"
+                      - Ref: AWS::Partition
+                      - ":organizations::"
+                      - Ref: ManagementAccount
+                      - ":account/o-*/*"
+              - Fn::Join:
+                    - ""
+                    - - "arn:"
+                      - Ref: AWS::Partition
+                      - ":organizations::"
+                      - Ref: ManagementAccount
+                      - ":ou/o-*/ou-*"
+          - Effect: Allow
+            Action: 
+              - securityhub:BatchUpdateFindings
+            Resource: 
+              - Fn::Join:
+                    - ""
+                    - - "arn:"
+                      - Ref: AWS::Partition
+                      - ":securityhub:*:"
+                      - Ref: AWS::AccountId
+                      - ":hub/default"
+          - Effect: Allow
+            Action: 
+              - sts:AssumeRole
+            Resource: !Ref OrgManagementAccountContactRole
+      Roles:
+        - Ref: SHEnrichmentFunctionRole
+
+  SHEnrichmentFunction:
+    Type: AWS::Serverless::Function 
+    Properties:
+      CodeUri: enrichment_function
+      Handler: import_findings/app.lambda_handler
+      Runtime: python3.9
+      MemorySize: 128
+      Timeout: 300
+      Environment:
+        Variables:
+         ORG_ROLE: !Ref OrgManagementAccountContactRole
+      Architectures:
+        - x86_64
+      Role: !GetAtt SHEnrichmentFunctionRole.Arn
+      Events:
+        SHFindingRule:
+          Type: EventBridgeRule 
+          Properties:
+            Pattern:
+              source:
+                - aws.securityhub
+              detail-type:
+                - Security Hub Findings - Imported
+              detail:
+                findings:
+                  RecordState:
+                    - ACTIVE
+                  UserDefinedFields:
+                    findingEnriched:
+                      - exists: false

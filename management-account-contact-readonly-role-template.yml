@@ -1,0 +1,41 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Parameters:
+  SecurityHubDelegatedAdmin:
+    Type: String
+    AllowedPattern: ^\d{12}$
+    Description: Delegated Admin AWS Account ID for the AWS Security Hub
+    ConstraintDescription: Enter a valid AWS Account ID
+    Default: '123456789012'
+
+Resources: 
+  AccountContactReadOnlyRole: 
+    Type: "AWS::IAM::Role"
+    Properties: 
+      AssumeRolePolicyDocument: 
+        Version: "2012-10-17"
+        Statement: 
+          - 
+            Effect: "Allow"
+            Principal: 
+             AWS: !Ref SecurityHubDelegatedAdmin
+            Action: 
+              - "sts:AssumeRole"
+      Path: "/"
+      RoleName: "account-contact-readonly"
+  RolePolicies: 
+    Type: "AWS::IAM::Policy"
+    Properties: 
+      PolicyName: "AccountContactReadOnly"
+      PolicyDocument: 
+        Version: "2012-10-17"
+        Statement: 
+          - Effect: "Allow"
+            Action: "Account:GetAlternateContact"
+            Resource: "*"
+      Roles: 
+        - Ref: "AccountContactReadOnlyRole"
+Outputs:
+  AccountContactReadOnlyRole:
+    Description: 'Role ARN for the allowing Security Hub Delegated Admin account to access the Account Alternate Contact details for the Organization members'
+    Value: !GetAtt AccountContactReadOnlyRole.Arn

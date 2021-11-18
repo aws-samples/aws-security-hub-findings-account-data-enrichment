@@ -1,0 +1,12 @@
+
+Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+
+**********************
+THIRD PARTY COMPONENTS
+**********************
+This software includes third party software subject to the following copyrights:
+
+six under the Massachusetts Institute of Technology (MIT) license
+boto3 under the Apache License Version 2.0
+requests under the Apache License Version 2.0
+regex under the Apache License Version 2.0
