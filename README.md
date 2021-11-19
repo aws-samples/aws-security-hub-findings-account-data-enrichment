@@ -32,12 +32,12 @@ Download or clone this repository.
 
 > Note: for all the AWS CLI commands used below, `us-east-1` is used as the default region.
 
-To create a new bucket for deployment artifacts, run `create-bucket.sh`.
-
 Update the AWS CLI profile to be used in the `profile.txt` file.
     Note: even for `default` profile  ,Create a file with text `default` in the `profile.txt` file
 
-    $ ./create-bucket.sh
+To create a new bucket for deployment artifacts, run `create-bucket.sh` by specifying the region as arguement as shown below.
+
+    $ ./create-bucket.sh us-east-1
     make_bucket: lambda-artifacts-a5e491dbb5b22e0d
 
 
@@ -47,9 +47,9 @@ Update the AWS CLI profile to be used in the `profile.txt` file.
   * `ManagementAccount` is the AWS account id for AWS Organizations management account
   * `OrgManagementAccountContactRole` is the arn of the IAM role created in the ORg.management account ( created in the first step) which has the read-only permission policy for Account management `GetAlternateContacts` API.
 
-To deploy the solution, run `deploy.sh`.
+To deploy the solution, run `deploy.sh` by specifying the region as arguement as shown below.
 
-    $ ./deploy.sh
+    $ ./deploy.sh us-east-1
     BUILD SUCCESSFUL in 1s
     Successfully packaged artifacts and wrote output template to file out.yml.
     Waiting for changeset to be created..
@@ -60,11 +60,10 @@ This script uses AWS CloudFormation to deploy the Lambda functions and an IAM ro
 
 ### Cleanup
 
-To delete the sample application that you created, use the AWS CLI. Assuming you used your project name for the stack name, you can run the following:
+To delete the sample application and all the associated resources including s3 buckets and log files run cleanup.sh and specify the region
 
-```bash
-aws cloudformation delete-stack --stack-name aws-security-hub-findings-resource-enrichment
-```
+$ ./cleanup.sh us-east-1
+
 
 ## License
 
