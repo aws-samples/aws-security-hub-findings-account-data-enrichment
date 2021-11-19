@@ -62,7 +62,7 @@ This script uses AWS CloudFormation to deploy the Lambda functions and an IAM ro
 
 To delete the sample application and all the associated resources including s3 buckets and log files run cleanup.sh and specify the region
 
-$ ./cleanup.sh us-east-1
+   $ ./cleanup.sh us-east-1
 
 
 ## License
