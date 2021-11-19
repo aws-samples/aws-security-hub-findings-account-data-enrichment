@@ -2,12 +2,14 @@
 set -eo pipefail
 STACK=aws-securityhub-findings-enrichment-stack
 PROFILE=$(cat profile.txt)
-if [[ $# -eq 1 ]] ; then
-    STACK=$1
-    echo "Deleting stack $STACK"
+if [[ $# -lt 1 ]] ; then
+     echo "Please specify the region as the arguement eg: ./cleanup.sh us-east-1"
+     exit
+else
+     REGION=$1
 fi
-FUNCTION=$(aws cloudformation describe-stack-resource --profile $PROFILE --stack-name $STACK --logical-resource-id function --query 'StackResourceDetail.PhysicalResourceId' --output text)
-aws cloudformation delete-stack --profile $PROFILE --stack-name $STACK
+FUNCTION=$(aws cloudformation describe-stack-resource --profile $PROFILE --stack-name $STACK --logical-resource-id SHEnrichmentFunction --query 'StackResourceDetail.PhysicalResourceId' --output text --region $REGION )
+aws cloudformation delete-stack --profile $PROFILE --stack-name $STACK --region $REGION
 echo "Deleted $STACK stack."
 
 if [ -f bucket-name.txt ]; then
@@ -29,7 +31,7 @@ fi
 while true; do
     read -p "Delete function log group (/aws/lambda/$FUNCTION)? (y/n)" response
     case $response in
-        [Yy]* ) aws logs delete-log-group --profile $PROFILE --log-group-name /aws/lambda/$FUNCTION; break;;
+        [Yy]* ) aws logs delete-log-group --profile $PROFILE --region $REGION  --log-group-name /aws/lambda/$FUNCTION; break;;
         [Nn]* ) break;;
         * ) echo "Response must start with y or n.";;
     esac
