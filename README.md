@@ -34,11 +34,12 @@ Download or clone this repository.
 
 To create a new bucket for deployment artifacts, run `create-bucket.sh`.
 
+Update the AWS CLI profile to be used in the `profile.txt` file.
+    Note: even for `default` profile  ,Create a file with text `default` in the `profile.txt` file
+
     $ ./create-bucket.sh
     make_bucket: lambda-artifacts-a5e491dbb5b22e0d
 
-Update the AWS CLI profile to be used in the `profile.txt` file.
-    Note: even for `default` profile  ,Create a file with text `default` in the `profile.txt` file
 
 ### Deploy
 * Deploy the `management-account-contact-readonly-role-template.yml` in the Org. Manamagement account and copy the Role ARN from the CloudFormation Stack output section
