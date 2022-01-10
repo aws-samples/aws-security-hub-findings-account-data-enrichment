@@ -37,7 +37,7 @@ Resources:
                     - ""
                     - - "arn:"
                       - Ref: AWS::Partition
-                      - ":organizations::"
+                      - ":account::"
                       - Ref: AWS::AccountId
                       - ":account/o-*/*"
       Roles: 
