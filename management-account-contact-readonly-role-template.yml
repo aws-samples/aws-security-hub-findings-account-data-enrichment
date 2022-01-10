@@ -22,7 +22,7 @@ Resources:
             Action: 
               - "sts:AssumeRole"
       Path: "/"
-      RoleName: "account-contact-readonly"
+      RoleName: "account-contact-readonly-test"
   RolePolicies: 
     Type: "AWS::IAM::Policy"
     Properties: 
@@ -32,7 +32,14 @@ Resources:
         Statement: 
           - Effect: "Allow"
             Action: "Account:GetAlternateContact"
-            Resource: "*"
+            Resource:
+              - Fn::Join:
+                    - ""
+                    - - "arn:"
+                      - Ref: AWS::Partition
+                      - ":organizations::"
+                      - Ref: AWS::AccountId
+                      - ":account/o-*/*"
       Roles: 
         - Ref: "AccountContactReadOnlyRole"
 Outputs:
