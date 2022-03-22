@@ -1,11 +1,10 @@
 ## Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 ## SPDX-License-Identifier: MIT-0
-
+import time
 import logging
 import boto3
 from botocore.client import Config
-
-
+from botocore.exceptions import ClientError
 class AwsHelper:
     def get_client(self, name, aws_region=None):
         config = Config(
@@ -41,7 +40,7 @@ class AwsHelper:
             aws_access_key_id = aws_access_key_id,
             aws_secret_access_key = aws_secret_access_key,
             aws_session_token = aws_session_token)
-
+    
 class AccountHelper:
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.INFO)
@@ -88,3 +87,45 @@ class AccountHelper:
         account_details["tags"] = results
         AccountHelper.logger.info("account_details: %s" , str(account_details))
         return account_details
+
+    @staticmethod
+    def update_metadata_in_ddb( table_name, account_id, account_metadata,text):
+        ddb = AwsHelper().get_resource('dynamodb')
+        table = ddb.Table(table_name)
+        create_time = int(time.time())
+        response = table.update_item(
+            Key={
+                'accountId': account_id
+            },
+            UpdateExpression="set createTime=:t, metadata=:md, enrich_text=:tx",
+            ExpressionAttributeValues={
+                ':t': create_time,
+                ':md': account_metadata,
+                ':tx' : text
+            },
+            ReturnValues="UPDATED_NEW"
+        )
+        return response
+
+    @staticmethod
+    def get_metadata_from_ddb(table_name,account_id):
+        metadata = {}
+        text = ''
+        ddb = AwsHelper().get_resource('dynamodb')
+        table = ddb.Table(table_name)
+        current_time =int(time.time())
+        try:
+            response = table.get_item(Key={'accountId': account_id})
+            AccountHelper.logger.info(response)
+            if 'Item' in response:
+                create_time = response['Item']['createTime']
+                AccountHelper.logger.debug("create Time{}:".format(create_time))
+                AccountHelper.logger.debug("Time Diff{}:".format(current_time-create_time))
+                if(current_time-create_time <=86400):
+                    metadata = response['Item']['metadata']
+                    text = response['Item']['enrich_text']
+                    AccountHelper.logger.info(metadata)
+                    AccountHelper.logger.info(text)
+        except ClientError as e:
+            print(e.response['Error']['Message'])
+        return text, metadata

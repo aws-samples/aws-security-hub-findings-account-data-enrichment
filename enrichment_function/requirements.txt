@@ -1,4 +1,3 @@
 requests
 six
 regex
-boto3==1.18.54

@@ -1,5 +1,6 @@
 ## Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 ## SPDX-License-Identifier: MIT-0
+from importlib.metadata import metadata
 import json
 import os
 import logging
@@ -49,6 +50,7 @@ def lambda_handler(event, context):
     status_code = 200
     message ='function complete'
     assume_role_name = os.environ["ORG_ROLE"]
+    table_name = os.environ["tableMetaData"]
     #Deserialize event into strongly typed object
     aws_event:AWSEvent = Marshaller.unmarshall(event, AWSEvent)
     enrichment_text = ""
@@ -65,9 +67,21 @@ def lambda_handler(event, context):
     logger.debug("Finding ID: %s " , enrichment_finding_id + " and product arn " + enrichment_finding_arn)
     try:
         #lookup and build the finding note and user defined fields  based on account Id
-        enrichment_text, tags_dict = enrich_finding(account_id, assume_role_name)
-        logger.debug("Text to post: %s" , enrichment_text)
-        logger.debug("User defined Fields %s" , json.dumps(tags_dict))
+        enrichment_text, tags_dict = AccountHelper.get_metadata_from_ddb(table_name=table_name, account_id=account_id)
+        if(not enrichment_text):
+            logger.debug("Data not in DDB, querying account Service")
+            enrichment_text, tags_dict = enrich_finding(account_id, assume_role_name)
+            logger.debug("Text to post: %s" , enrichment_text)
+            logger.debug("User defined Fields %s" , json.dumps(tags_dict))
+            try:
+                response = AccountHelper.update_metadata_in_ddb(table_name=table_name,account_id=account_id, account_metadata=tags_dict, text=enrichment_text)
+                logger.debug("Data updated in DDB {}".format(response))
+            except ClientError as error:
+                logger.warn(error.response['Error']['Message'])
+            except Exception as error:
+                logger.warn(error.response['Error']['Message'])
+        else:
+            logger.debug("Data found in DDB, Not querying account Service")
         #add the note to the finding and add a userDefinedField to use in the event bridge rule and prevent repeat lookups
         response = secHubClient.batch_update_findings(
             FindingIdentifiers=[

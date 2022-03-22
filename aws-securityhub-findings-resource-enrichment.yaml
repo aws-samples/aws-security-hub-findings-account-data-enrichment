@@ -7,15 +7,28 @@ Parameters:
     Type: String
     AllowedPattern: ^\d{12}
     Description: Management AWS Account ID for the AWS Organizations
-    Default: '123456789012'
+    Default: '077490158405'
   
   OrgManagementAccountContactRole:
     Type: String
     AllowedPattern: arn:(aws[a-zA-Z-]*)?:iam::\d{12}:role/?[a-zA-Z_0-9+=,.@\-_/]+
     Description: Role ARN in the management account to access the Alternate contact details
-    Default: arn:aws:iam::123456789012:role/account-contact-readonly
+    Default: arn:aws:iam::077490158405:role/account-contact-readonly
 
 Resources:
+  AccountMetadataTable:
+    Properties:
+      AttributeDefinitions:
+        - AttributeName: accountId
+          AttributeType: S
+      BillingMode: PAY_PER_REQUEST
+      KeySchema:
+        - AttributeName: accountId
+          KeyType: HASH
+      SSESpecification:
+        SSEEnabled: true
+    Type: AWS::DynamoDB::Table
+
   SHEnrichmentFunctionRole:
     Type: AWS::IAM::Role
     Properties:
@@ -71,6 +84,14 @@ Resources:
             Action: 
               - sts:AssumeRole
             Resource: !Ref OrgManagementAccountContactRole
+          - Effect: Allow
+            Action:
+              - dynamodb:GetItem
+              - dynamodb:PutItem
+              - dynamodb:UpdateItem
+              - dynamodb:DescribeTable
+            Resource:
+              - !GetAtt 'AccountMetadataTable.Arn'
       Roles:
         - Ref: SHEnrichmentFunctionRole
 
@@ -84,13 +105,14 @@ Resources:
       Timeout: 300
       Environment:
         Variables:
-         ORG_ROLE: !Ref OrgManagementAccountContactRole
+          ORG_ROLE: !Ref OrgManagementAccountContactRole
+          tableMetaData: !Ref 'AccountMetadataTable'
       Architectures:
         - x86_64
       Role: !GetAtt SHEnrichmentFunctionRole.Arn
       Events:
         SHFindingRule:
-          Type: EventBridgeRule 
+          Type: EventBridgeRule
           Properties:
             Pattern:
               source:
